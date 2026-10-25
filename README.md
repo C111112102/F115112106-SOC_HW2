@@ -319,9 +319,7 @@ IRQ61
 其中：
 
 ```text
-61U
-=
-Unsigned Integer 61
+61U = Unsigned Integer 61
 ```
 
 此數值是由 Vivado 根據硬體連線自動產生。
