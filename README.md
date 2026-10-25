@@ -124,7 +124,7 @@ XScuGic_Enable(...)
 
 ## GIC Registers
 
-![GIC Register](image/Pending_Register.png)
+![GIC Register]([image/Pending_Register.png](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/IRQ%20ID%20Port.png))
 
 由 UG585 查詢到重要 Register：
 
