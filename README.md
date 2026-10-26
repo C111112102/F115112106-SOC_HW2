@@ -294,12 +294,6 @@ AXI_GPIO_1 Interrupt
 IRQ61
 ```
 
-其中：
-
-```text
-61U = Unsigned Integer 61
-```
-
 此數值是由 Vivado 根據硬體連線自動產生。與 UG585 的定義完全一致。
 
 ---
@@ -315,8 +309,10 @@ XScuGic_CfgInitialize(...)
 用途：
 
 ```text
-初始化 Generic Interrupt Controller
+初始化 Generic Interrupt Controller (GIC)
 ```
+
+建立 PS 端中斷控制器，使系統能夠接收與管理 Interrupt。
 
 ---
 
@@ -338,10 +334,12 @@ XScuGic_Connect(
 ```text
 IRQ61
 ↓
+GIC
+↓
 BTN_Intr_Handler()
 ```
 
-建立 IRQ 與 ISR 對應關係。
+建立 Interrupt ID 與 ISR (Interrupt Service Routine) 的對應關係。
 
 ---
 
@@ -361,6 +359,8 @@ XScuGic_Enable(
 ```text
 允許 IRQ61 進入 GIC
 ```
+
+啟用後，當 FPGA 送出中斷訊號時，GIC 才會進行處理。
 
 ---
 
@@ -382,6 +382,50 @@ XGpio_InterruptGlobalEnable(...)
 允許 AXI_GPIO_1 產生 Interrupt
 ```
 
+使 Switch 狀態變化時能產生中斷事件。
+
+---
+
+## Interrupt ID
+
+程式中定義：
+
+```c
+#define XPS_FPGA0_INT_ID 61U
+```
+
+其中：
+
+```text
+XPS_FPGA0_INT_ID
+↓
+IRQ61
+↓
+IRQ_F2P[0]
+```
+
+根據 UG585 的 IRQ Mapping：
+
+```text
+IRQ_F2P[0] → IRQ61
+```
+
+而在硬體設計中：
+
+```text
+SW
+↓
+AXI_GPIO_1
+↓
+ip2intc_irpt
+↓
+IRQ_F2P[0]
+↓
+IRQ61
+```
+
+因此 XPS_FPGA0_INT_ID 所代表的中斷來源為 AXI_GPIO_1 的中斷輸出。
+
 ---
 
 # ISR 設計
@@ -392,7 +436,13 @@ Interrupt Service Routine：
 void BTN_Intr_Handler(void *CallbackRef)
 ```
 
-當 IRQ61 發生時執行。
+當 GIC 接收到 IRQ61*時，
+
+```*ext
+BTN_Intr_Handler()
+```
+
+會*呼叫執行。
 
 *要功能：
 
@@ -400,96 +450,105 @@ void BTN_Intr_Handler(void *CallbackRef)
 Direction ^= 1;
 ```
 
-切換*馬燈方向。
+切換*LED*跑馬燈方向：
 
 ```text
-LEFT
-↓
-RIGHT
-
-RIGHT*↓
 *EFT
+↓
+RIGHT*
+RIGHT
+↓
+LEFT
 ```
 
 ---
 
-# Interrupt Flow
+* Interrupt Flow
 
-``*text
+```text
 SW
+↓*AXI_GPIO_1
 ↓
-AXI_GPIO_1
+ip*intc_irpt
 ↓
-ip2intc_irp**↓
-IRQ_F2P[0]
+IRQ_F*P[0]
 ↓
 IRQ61
-*
+↓
 GIC
 ↓
-BTN_Intr_Handler()
+BTN_Intr*Handler()
 ↓
-Direct*on*^= 1
+Direction ^= 1
 ↓
-LED 跑馬燈反向
-*``
-
----
+LED R*nning Light Reverse Direction
+```
+*---
 
 # 實驗結果
 
 正常狀態：
 
-```*ext
+```text
 LED0
-↓
-LED1
+↓*LED1
 ↓
 LED2
-*
+↓
 ...
 ↓
 LED7
 ```
 
-向左移動。
+LED *左向右移動。
 
-*--
+---
 
-SW 觸發 Interrupt：
-
-```text
-IRQ6*
-↓*BTN_Intr_Handler()
+當 SW 觸發 Interrupt 時：
+*```text
+IRQ61
 ↓
-Direction ^= *
+BTN_Intr_Handler()
+↓
+Direction ^= 1
 ```
 
-變成：
+跑馬燈方向反轉：
 
 ```text
 LED7
 ↓
 LED6
-↓*LED5
+↓
+LED5
 ↓
 ...
 ↓
 LED0
 ```
 
-向*g System)
-- PL (Programmable Logic)
-- IRQ_F2P
-- IRQ Mapping
-- GIC Registers
+LED 由右向左移動。
 
-並成功將：
+---
+
+# 結論
+
+透過查詢 UG585 文件，了解：
+
+- PS (Processing System)
+- PL (Programmable Logic)
+- IRQ_F2P Interface
+- IRQ Mapping
+- Generic Interrupt Controller (GIC)
+
+並成功將硬體與軟體中斷流程串接：
 
 ```text
 SW
 ↓
 AXI_GPIO_1
+↓
+ip2intc_irpt
 ↓
 IRQ_F2P[0]
 ↓
@@ -499,10 +558,10 @@ GIC
 ↓
 BTN_Intr_Handler()
 ↓
-LED Running Light
+Direction ^= 1
+↓
+LED Running Light Reverse Direction
 ```
-
-完整串接。
 
 成功驗證 Zynq-7020 的 PL → PS Interrupt 機制以及 GIC 中斷控制流程。
 
