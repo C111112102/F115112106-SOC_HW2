@@ -319,13 +319,9 @@ CPUInitialize(InstancePtr);
 其中：
 
 ```text
-Distributor
-=
-負責接收與分配 Interrupt
+Distributor = 負責接收與分配 Interrupt
 
-CPU Interface
-=
-負責將 Interrupt 傳送至 CPU
+CPU Interface = 負責將 Interrupt 傳送至 CPU
 ```
 
 因此 `XScuGic_CfgInitialize()` 的作用不只是建立物件，而是完成 GIC 的初始化工作，使 Processing System 能夠接收來自 Programmable Logic 的 Interrupt。
@@ -343,6 +339,8 @@ XScuGic_Connect(
     (Xil_ExceptionHandler)BTN_Intr_Handler,
     (void *)GpioPtr);
 ```
+
+![XScuGic_Connect](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XScuGic_Connect.png)
 
 來源：
 
