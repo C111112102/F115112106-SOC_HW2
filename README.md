@@ -402,7 +402,7 @@ xscugic.c
 
 ---
 
-##啟用 GPIO Interrupt
+## 啟用 GPIO Interrupt
 
 程式：
 
@@ -423,6 +423,9 @@ XGpio_InterruptGlobalEnable(
 xgpio.h
 xgpio_intr.c
 ```
+![XGpio_InterruptEnable](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XGpio_InterruptEnable.png)
+
+![XGpio_InterruptGlobalEnable](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XGpio_InterruptGlobalEnable.png)
 
 用途：
 
@@ -439,7 +442,7 @@ xgpio_intr.c
 程式定義：
 
 ```c
-#define GPIO_INTERRUPT_ID \ XPAR_FABRIC_AXI_GPIO_1_IP2INTC_IRPT_INTR
+#define GPIO_INTERRUPT_ID  XPAR_FABRIC_AXI_GPIO_1_IP2INTC_IRPT_INTR
 ```
 
 展開後：
@@ -453,6 +456,7 @@ xgpio_intr.c
 ```text
 xparameters.h
 ```
+![XPAR_FABRIC_AXI_GPIO_1_IP2INTC_IRPT_INTR](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/%23define%20XPAR_FABRIC_AXI_GPIO_1_IP2INTC_IRPT_INTR%2061U.png)
 
 其中：
 
@@ -485,10 +489,12 @@ IRQ61
 ```verilog
 .ip2intc_irpt(axi_gpio_1_ip2intc_irpt)
 ```
+![ip2intc_irpt(axi_gpio_1_ip2intc_irpt)](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/ip2intc_irpt(axi_gpio_1_ip2intc_irpt).png)
 
 ```verilog
 .IRQ_F2P(axi_gpio_1_ip2intc_irpt)
 ```
+![IRQ_F2P(axi_gpio_1_ip2intc_irpt)](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/IRQ_F2P(axi_gpio_1_ip2intc_irpt).png)
 
 可追蹤出完整硬體路徑：
 
@@ -525,6 +531,7 @@ Interrupt Service Routine：
 ```c
 void BTN_Intr_Handler(void *CallbackRef)
 ```
+![BTN_Intr_Handler](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/BTN_Intr_Handler.png)
 
 * GIC 接收到 IRQ61 時：
 
