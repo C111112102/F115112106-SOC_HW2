@@ -65,11 +65,14 @@ PL 為 FPGA 可程式化邏輯區。
 
 本實驗中使用：
 
+```text
 AXI_GPIO_0
 AXI_GPIO_1
+```
 
 功能如下：
 
+```text
 AXI_GPIO_0
 ↓
 LED
@@ -77,6 +80,7 @@ LED
 AXI_GPIO_1
 ↓
 SW
+```
 
 ---
 
