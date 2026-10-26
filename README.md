@@ -202,6 +202,10 @@ PL interrupts to PS = Interrupt Request FPGA to Processor
 
 ---
 
+##PL Interrupt Signals
+
+![IRQ ID Port](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/PL%20Interrupt%20Signals.png)
+
 ## IRQ Port Mapping
 
 ![IRQ ID Port](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/IRQ%20ID%20Port.png)
