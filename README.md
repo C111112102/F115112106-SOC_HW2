@@ -180,6 +180,8 @@ End Of Interrupt Register
 
 ## Interrupt Port
 
+![PS-PL Signal Groups](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/PS-PL%20Signal%20Groups.png)
+
 UG585 中找到：
 
 ```text
