@@ -1,3 +1,5 @@
+```v
+
 `timescale 1 ps / 1 ps
 
 module design_HW2_wrapper
@@ -170,3 +172,5 @@ module design_HW2_wrapper
         .O(leds_8bits_tri_i_7),
         .T(leds_8bits_tri_t_7));
 endmodule
+
+```
