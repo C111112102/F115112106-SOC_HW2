@@ -274,45 +274,60 @@ ip2intc_irpt
 
 # Software Design
 
-## xparameters.h
-
-Vivado Export Hardware 後，
-
-Vitis 自動產生：
-
-```c
-#define XPAR_FABRIC_AXI_GPIO_1_IP2INTC_IRPT_INTR 61U
-```
-
-![#define XPAR_FABRIC_AXI_GPIO_1_IP2INTC_IRPT_INTR 61U](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/%23define%20XPAR_FABRIC_AXI_GPIO_1_IP2INTC_IRPT_INTR%2061U.png)
-
-代表：
-
-```text
-AXI_GPIO_1 Interrupt
-↓
-IRQ61
-```
-
-此數值是由 Vivado 根據硬體連線自動產生。與 UG585 的定義完全一致。
-
----
-
 ## 初始化 GIC
 
 程式：
 
 ```c
-XScuGic_CfgInitialize(...)
+Config = XScuGic_LookupConfig(INTC_DEVICE_ID);
+
+XScuGic_CfgInitialize(
+    IntcPtr,
+    Config,
+    Config->CpuBaseAddress);
+```
+
+來源：
+
+```text
+xscugic.h
+xscugic.c
 ```
 
 用途：
 
 ```text
-初始化 Generic Interrupt Controller (GIC)
+取得 GIC 設定資訊
+↓
+初始化 Distributor
+↓
+初始化 CPU Interface
+↓
+建立 GIC Instance
+↓
+準備接收 Interrupt
 ```
 
-建立 PS 端中斷控制器，使系統能夠接收與管理 Interrupt。
+根據 Xilinx Driver 原始碼：
+
+```c
+DistributorInit(InstancePtr, Cpu_Id);
+CPUInitialize(InstancePtr);
+```
+
+其中：
+
+```text
+Distributor
+=
+負責接收與分配 Interrupt
+
+CPU Interface
+=
+負責將 Interrupt 傳送至 CPU
+```
+
+因此 `XScuGic_CfgInitialize()` 的作用不只是建立物件，而是完成 GIC 的初始化工作，使 Processing System 能夠接收來自 Programmable Logic 的 Interrupt。
 
 ---
 
@@ -324,146 +339,263 @@ XScuGic_CfgInitialize(...)
 XScuGic_Connect(
     IntcPtr,
     GPIO_INTERRUPT_ID,
-    BTN_Intr_Handler,
-    ...
-);
+    (Xil_ExceptionHandler)BTN_Intr_Handler,
+    (void *)GpioPtr);
 ```
 
-實際效果：
+來源：
 
-```text
-IRQ61
+*``text
+xscugic.c
+``*
+
+核心程式：
+
+```c
+InstancePtr*>Config->HandlerTable[Int_Id].Hand*er
+*       = Handler;
+```
+
+用途：
+
+```tex**IRQ61
 ↓
-GIC
+HandlerTable[61*
 ↓
 BTN_Intr_Handler()
 ```
 
-建立 Interrupt ID 與 ISR (Interrupt Service Routine) 的對應關係。
+建立 Inte*rupt ID 與 ISR（Interrupt*Service Routine*的對應關係。
+
+當 IRQ61 發*時，GIC 會*據 HandlerTable 找*對應的 ISR 並*行。
 
 ---
 
 ## 啟用 Interrupt
 
-程式：
+*式：
 
 ```c
-XScuGic_Enable(
+XScuG*c_Enable(
     IntcPtr,
-    GPIO_INTERRUPT_ID
+    GPIO*INTERRUPT_ID
 );
 ```
 
-用途：
+來源：
 
-```text
-允許 IRQ61 進入 GIC
+```text*xscugic.c
 ```
 
-啟用後，當 FPGA 送出中斷訊號時，GIC 才會進行處理。
+用途*
+
+```text
+設定 GIC Enable Register
+*
+啟用 IRQ61
+```
+
+*用後，IRQ*1 才能被*GIC 接收與處理。
 
 ---
 
-## 啟用 GPIO Interrupt
+##*啟用 GPIO Interrupt
 
 程式：
 
-```c
-XGpio_InterruptEnable(...)
-```
+```*
+XGpio_InterruptEnable(
+   *&Gpio_SW,
+    1);
+``*
 
 ```c
-XGpio_InterruptGlobalEnable(...)
+XGpio_InterruptGlobal*nable(
+    &Gpio_SW);
+```
+
+*源：
+
+```text
+xgpio.h
+x*pio_intr.c
 ```
 
 用途：
 
-```text
-允許 AXI_GPIO_1 產生 Interrupt
+```text*允許 AXI_GPIO_1 產* Interrupt
 ```
 
-使 Switch 狀態變化時能產生中斷事件。
+當 Switch 狀態*變時，即可送出中斷*號。
 
 ---
 
-## Interrupt ID
+# Interrupt ID
 
-程式中定義：
+程式*義：
 
 ```c
-#define XPS_FPGA0_INT_ID 61U
-```
+#define GPIO_INTERRUPT_ID*\
+        XPAR_FABRIC_AXI_GPIO_*_IP2INTC_IRPT_INTR
+``*
+
+展開後：
+
+```c
+#define X*AR_FABRIC_AXI_GPIO_1_IP2*NTC_IRPT_INTR 61U
+``*
+
+來源：
+
+```text
+xparameters.h
+*``
 
 其中：
 
 ```text
-XPS_FPGA0_INT_ID
+GPIO_INTERRUPT_ID*↓
+61U
 ↓
-IRQ61
-↓
+IRQ61*↓
 IRQ_F2P[0]
 ```
 
-根據 UG585 的 IRQ Mapping：
+根據 Zynq-7000*TRM（UG585）IRQ Mapping：
 
-```text
-IRQ_F2P[0] → IRQ61
+```*ext
+IRQ_F2P[0] →*IRQ61
 ```
 
-而在硬體設計中：
+因此 GPIO*INTERRUPT_ID 最終對應：
 
 ```text
-SW
+*RQ61
+```
+
+也就是 FPGA 傳*至 Processing System 的第一個 PL Interr*pt。
+
+*--
+
+# Hardware Interrupt Path
+
+根據 *ivado*Block Design 及 Verilog：
+
+```*erilog
+.ip2intc_irpt(axi_gpio_1_ip*intc_irpt*
+```
+
+```verilog
+.IRQ_F*P(axi_gpio_1_ip2int*_irpt)
+```
+
+可追蹤*完整硬體路徑：
+
+```text*SW
 ↓
-AXI_GPIO_1
+AXI_GPIO*1
 ↓
-ip2intc_irpt
+ip2intc_ir*t
 ↓
 IRQ_F2P[0]
 ↓
 IRQ61
 ```
 
-因此 XPS_FPGA0_INT_ID 所代表的中斷來源為 AXI_GPIO_1 的中斷輸出。
+因此 IRQ*1 的實際來源為：
+
+```text
+*W
+↓
+AXI*GPIO_1
+↓
+ip2intc*irpt
+```
+
+而* Processing System 內部*生。
 
 ---
 
 # ISR 設計
 
-Interrupt Service Routine：
+*nterrupt Service Routine：
 
 ```c
-void BTN_Intr_Handler(void *CallbackRef)
+vo*d BTN_In*r_Handler(void *CallbackRef)
 ```
 
-當 GIC 接收到 IRQ61*時，
+* GIC 接收到 IRQ61 時：
 
-```*ext
-BTN_Intr_Handler()
+```text*IRQ61
+↓
+HandlerTable[61]
+↓
+BTN_Int*_Handler()
 ```
 
-會*呼叫執行。
+*SR 主要功能：
 
-*要功能：
-
-```c
+```*
 Direction ^= 1;
 ```
 
-切換*LED*跑馬燈方向：
+利用*XOR 運算切換方向旗標：
+
+*``text
+0 → 1
+1 →*0
+```
+
+對應方向：
+
+```*ext
+0 = LEFT
+1 = RIGHT
+*``
+
+因此可以改變 LED 跑馬*方向：
 
 ```text
-*EFT
-↓
-RIGHT*
+LEFT
+*
+RIGHT
+
 RIGHT
 ↓
 LEFT
+*``
+
+此外，*SR 內部還會：
+
+```c
+*Gpio_InterruptDisable(...)
+*``
+
+*時關*中斷，
+
+接*：
+
+```c
+XGpio_Interrupt*lear(...)
 ```
+
+清除中斷*態，
+
+最後：
+
+```c
+XG*io_InterruptEnable(...)
+```
+
+重新*啟中斷*
+
+避免相*中斷被重複觸*。
 
 ---
 
-* Interrupt Flow
+# Interrupt Flow
+
+完整中*流程如下：
 
 ```text
 SW
@@ -474,50 +606,55 @@ ip*intc_irpt
 IRQ_F*P[0]
 ↓
 IRQ61
+*
+GIC Distributor
 ↓
-GIC
+GIC*CPU Interface
 ↓
-BTN_Intr*Handler()
+HandlerTable[61]
+↓*BTN_Intr_Handler()
 ↓
-Direction ^= 1
+Direction ^= *
 ↓
-LED R*nning Light Reverse Direction
+LED Running Light Reverse Direc*ion
 ```
-*---
 
-# 實驗結果
+---
 
+# 實驗結果*
 正常狀態：
 
 ```text
 LED0
-↓*LED1
 ↓
-LED2
+LED1
+↓
+LED*
 ↓
 ...
 ↓
 LED7
 ```
 
-LED *左向右移動。
+LED 由左向右移動*
 
 ---
 
-當 SW 觸發 Interrupt 時：
-*```text
-IRQ61
-↓
-BTN_Intr_Handler()
-↓
-Direction ^= 1
-```
-
-跑馬燈方向反轉：
+當 SW 狀態改變時*
 
 ```text
-LED7
+SW
 ↓
+IRQ61*↓
+BTN_Intr_Handler()
+↓
+*irection ^= 1
+```
+
+跑馬*方向反轉：
+
+```text
+LED7*↓
 LED6
 ↓
 LED5
@@ -525,45 +662,54 @@ LED5
 ...
 ↓
 LED0
-```
+``*
 
 LED 由右向左移動。
 
----
+*--
 
 # 結論
 
-透過查詢 UG585 文件，了解：
+透過閱讀：
 
-- PS (Processing System)
-- PL (Programmable Logic)
-- IRQ_F2P Interface
+*``text
+UG585
+*ivado Block Design
+Verilog Source *ode
+xparameters.h
+xscugic.c
+```
+
+了*：
+
+- PS（Processing System）
+- PL（Pr*grammable Logic）
+- IRQ_F2P Interfa*e
 - IRQ Mapping
-- Generic Interrupt Controller (GIC)
+- Generic Interrup* Controller（GIC）
+- Interrupt Handl*r Table
 
 並成功將硬體與軟體中斷流程串接：
 
-```text
-SW
+```text*SW
 ↓
 AXI_GPIO_1
 ↓
-ip2intc_irpt
+ip2intc*irpt
 ↓
-IRQ_F2P[0]
+IRQ_F2P[*]
 ↓
 IRQ61
 ↓
-GIC
+G*C
 ↓
 BTN_Intr_Handler()
+↓*Direction ^= 1
 ↓
-Direction ^= 1
-↓
-LED Running Light Reverse Direction
+LED Running*Light Reverse Direction
 ```
 
-成功驗證 Zynq-7020 的 PL → PS Interrupt 機制以及 GIC 中斷控制流程。
+成功驗證 **nq-7020 的 PL → PS Interrupt 機制，以及 *IC 的中斷控制流程。
 
 # 實驗結果影片
 
