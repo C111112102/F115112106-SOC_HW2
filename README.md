@@ -519,3 +519,7 @@ LED Running Light
 完整串接。
 
 成功驗證 Zynq-7020 的 PL → PS Interrupt 機制以及 GIC 中斷控制流程。
+
+# 實驗結果影片
+
+https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Vedio/Practical%20Video.md
