@@ -202,9 +202,19 @@ PL interrupts to PS = Interrupt Request FPGA to Processor
 
 ---
 
-##PL Interrupt Signals
+## PL Interrupt Signals
 
 ![IRQ ID Port](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/PL%20Interrupt%20Signals.png)
+
+UG585 定義：
+
+```text
+IRQ_F2P[0] → SPI Number 61
+IRQ_F2P[1] → SPI Number 62
+IRQ_F2P[2] → SPI Number 63
+IRQ_F2P[3] → SPI Number 64
+...
+```
 
 ## IRQ Port Mapping
 
