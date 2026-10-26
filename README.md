@@ -227,7 +227,8 @@ UG585 中可看到：
 PL - PS Signal Name   Interrupt Name    IRQ ID
 
     IRQF2P[2:0]           PL[2:0]        63:61
-...
+    IRQF2P[7:4]           PL[7:4]        68:64
+    IRQF2P[15:8]          PL[15:8]       91:84
 ```
 
 因此：
