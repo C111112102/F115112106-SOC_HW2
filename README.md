@@ -183,15 +183,13 @@ End Of Interrupt Register
 UG585 中找到：
 
 ```text
-IRQ_F2P[15:0]
+PS-PL Signal Groups
 ```
 
 其中：
 
 ```text
-IRQ_F2P
-=
-Interrupt Request FPGA to Processor
+PL interrupts to PS = Interrupt Request FPGA to Processor
 ```
 
 用途：
