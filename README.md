@@ -512,17 +512,7 @@ IRQ_F2P[0]
 IRQ61
 ```
 
-因此 IRQ61 的實際來源為：
-
-```text
-SW
-↓
-AXI_GPIO_1
-↓
-ip2intc_irpt
-```
-
-而非 Processing System 內部產生。
+因此 IRQ61 的中斷來源來自 Programmable Logic (PL) 端的 AXI_GPIO_1。
 
 ---
 
@@ -582,6 +572,7 @@ LEFT
 ```c
 XGpio_InterruptDisable(...)
 ```
+![XGpio_InterruptDisable](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XGpio_InterruptDisable.png)
 
 暫時關閉中斷。
 
@@ -590,6 +581,7 @@ XGpio_InterruptDisable(...)
 ```c
 XGpio_InterruptClear(...)
 ```
+![XGpio_InterruptClear](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XGpio_InterruptClear.png)
 
 清除中斷狀態。
 
@@ -598,6 +590,7 @@ XGpio_InterruptClear(...)
 ```c
 XGpio_InterruptEnable(...)
 ```
+![XGpio_InterruptEnable](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XGpio_InterruptEnable.png)
 
 重新開啟中斷。
 
