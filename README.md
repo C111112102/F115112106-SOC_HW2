@@ -124,7 +124,7 @@ XScuGic_Enable(...)
 
 ## GIC Registers
 
-![GIC Register](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/IRQ%20Numbers.png)
+![GIC Register](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/IRQ%20Numbers.png)
 
 由 UG585 查詢到重要 Register：
 
@@ -208,7 +208,7 @@ PS
 
 ## IRQ Port Mapping
 
-![IRQ ID Port](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/IRQ%20ID%20Port.png)
+![IRQ ID Port](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/IRQ%20ID%20Port.png)
 
 UG585 中可看到：
 
