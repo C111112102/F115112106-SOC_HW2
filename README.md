@@ -259,32 +259,16 @@ IRQ61
 本實驗架構：
 
 ```text
-SW
-↓
-AXI_GPIO_1
-↓
+    SW                 LED
+     ↓                  ↓
+ AXI_GPIO_1         AXI_GPIO_0
+     ↓
 ip2intc_irpt
-↓
-IRQ_F2P[0]
-↓
-PS
-
-LED
-↑
-AXI_GPIO_0
+     ↓
+ IRQ_F2P[0]
+     ↓
+    PS
 ```
-
-因此形成：
-
-```text
-AXI_GPIO_1
-↓
-IRQ_F2P[0]
-↓
-IRQ61
-```
-
-這與 UG585 的定義完全一致。
 
 ---
 
@@ -314,7 +298,7 @@ IRQ61
 61U = Unsigned Integer 61
 ```
 
-此數值是由 Vivado 根據硬體連線自動產生。
+此數值是由 Vivado 根據硬體連線自動產生。與 UG585 的定義完全一致。
 
 ---
 
