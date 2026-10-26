@@ -522,4 +522,4 @@ LED Running Light
 
 # 實驗結果影片
 
-https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Vedio/Practical%20Video.md
+[Practical Video](https://github.com/user-attachments/assets/23d0755c-8554-480a-b3e7-245673751b46)
