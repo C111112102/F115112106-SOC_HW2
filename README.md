@@ -118,7 +118,7 @@ XScuGic_Enable(...)
 
 ---
 
-## GIC Registers
+## GIC Registers (Page.234)
 
 ![GIC Register](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/IRQ%20Numbers.png)
 
@@ -174,7 +174,7 @@ End Of Interrupt Register
 
 # 題目二 ANS
 
-## Interrupt Port
+## Interrupt Port (Page.56)
 
 ![PS-PL Signal Groups](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/PS-PL%20Signal%20Groups.png)
 
@@ -198,7 +198,7 @@ PL interrupts to PS = Interrupt Request FPGA to Processor
 
 ---
 
-## PL Interrupt Signals
+## PL Interrupt Signals (Page.57)
 
 ![IRQ ID Port](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/PL%20Interrupt%20Signals.png)
 
@@ -212,7 +212,7 @@ IRQ_F2P[3] → SPI Number 64
 ...
 ```
 
-## IRQ Port Mapping
+## IRQ Port Mapping (Page.231)
 
 ![IRQ ID Port](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/IRQ%20ID%20Port.png)
 
