@@ -286,7 +286,6 @@ XScuGic_CfgInitialize(
     Config,
     Config->CpuBaseAddress);
 ```
-![XScuGic_CfgInitialize](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XScuGic_CfgInitialize.png)
 
 來源：
 
@@ -294,6 +293,8 @@ XScuGic_CfgInitialize(
 xscugic.h
 xscugic.c
 ```
+
+![XScuGic_CfgInitialize](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XScuGic_CfgInitialize.png)
 
 用途：
 
@@ -340,13 +341,12 @@ XScuGic_Connect(
     (void *)GpioPtr);
 ```
 
-![XScuGic_Connect](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XScuGic_Connect.png)
-
 來源：
 
 ```text
 xscugic.c
-``
+```
+![XScuGic_Connect](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XScuGic_Connect.png)
 
 核心程式：
 
@@ -359,7 +359,7 @@ InstancePtr->Config->HandlerTable[Int_Id].Handler = Handler;
 ```text
 IRQ61
 ↓
-HandlerTable[61*
+HandlerTable[61]
 ↓
 BTN_Intr_Handler()
 ```
@@ -381,11 +381,14 @@ XScuGic_Enable(
 );
 ```
 
+
 來源：
 
 ```text
 xscugic.c
 ```
+
+![XScuGic_Enable](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XScuGic_Enable.png)
 
 用途：
 
