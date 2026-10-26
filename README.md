@@ -26,7 +26,7 @@
 
 ---
 
-# 題目一回答
+# 題目一 ANS
 
 ## 參考文件
 
@@ -176,7 +176,7 @@ End Of Interrupt Register
 
 ---
 
-# 題目二回答
+# 題目二 ANS
 
 ## Interrupt Port
 
@@ -253,6 +253,8 @@ IRQ61
 # Hardware Design
 
 ## Vivado Block Design
+
+![Block](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/Block.png)
 
 本實驗架構：
 
