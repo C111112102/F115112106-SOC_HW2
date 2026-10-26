@@ -228,7 +228,7 @@ IRQ61
 
 ## IRQ Mapping
 
-![IRQ Mapping](image/IRQ_numbers.jpg)
+![IRQ Mapping]([image/IRQ_numbers.jpg](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/IRQ%20ID%20Port.png))
 
 UG585 定義：
 
