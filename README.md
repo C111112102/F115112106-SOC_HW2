@@ -223,11 +223,10 @@ IRQ_F2P[3] → SPI Number 64
 UG585 中可看到：
 
 ```text
-PL[2:0]
-↓
-IRQF2P[2:0]
-↓
-IRQ63~61
+
+PL - PS Signal Name   Interrupt Name    IRQ ID
+    IRQF2P[2:0]           PL[2:0]        63:61
+...
 ```
 
 因此：
