@@ -224,7 +224,7 @@ UG585 中可看到：
 
 ```text
 
-PL - PS Signal Name   Interrupt Name    IRQ ID
+#PL - PS Signal Name   Interrupt Name    IRQ ID
     IRQF2P[2:0]           PL[2:0]        63:61
 ...
 ```
