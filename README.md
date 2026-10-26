@@ -208,7 +208,7 @@ PS
 
 ## IRQ Port Mapping
 
-![IRQ Port](image/IRQ_ID_Port.png)
+![IRQ ID Port](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/IRQ%20ID%20Port.png)
 
 UG585 中可看到：
 
