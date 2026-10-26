@@ -195,12 +195,8 @@ PL interrupts to PS = Interrupt Request FPGA to Processor
 用途：
 
 ```text
-PL
-↓
-PS
-```
-
 將 FPGA 產生的 Interrupt 傳送至 ARM Processor。
+```
 
 ---
 
