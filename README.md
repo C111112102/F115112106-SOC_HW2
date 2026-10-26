@@ -286,6 +286,7 @@ XScuGic_CfgInitialize(
     Config,
     Config->CpuBaseAddress);
 ```
+![XScuGic_CfgInitialize](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/XScuGic_CfgInitialize.png)
 
 來源：
 
