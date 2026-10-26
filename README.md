@@ -259,15 +259,33 @@ IRQ61
 本實驗架構：
 
 ```text
-    SW                 LED
-     ↓                  ↓
- AXI_GPIO_1         AXI_GPIO_0
-     ↓
+Interrupt Path
+
+SW
+↓
+AXI_GPIO_1
+↓
 ip2intc_irpt
-     ↓
- IRQ_F2P[0]
-     ↓
-    PS
+↓
+IRQ_F2P[0]
+↓
+PS (GIC)
+↓
+BTN_Intr_Handler()
+
+
+
+LED Output Path
+
+BTN_Intr_Handler()
+↓
+Direction ^= 1
+↓
+Main Loop
+↓
+AXI_GPIO_0
+↓
+LED
 ```
 
 ---
