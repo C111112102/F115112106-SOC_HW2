@@ -2,6 +2,8 @@
 
 ## 作業題目
 
+![HW2](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/HW2.jpg)
+
 ### 題目一
 
 查找：
