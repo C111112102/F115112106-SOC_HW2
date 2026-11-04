@@ -29,7 +29,7 @@
        │                            └── slv_reg2 (0x08) ───────> 中斷手動清除邏輯
        └── IRQ_F2P[0:0] <────────── irq_out (硬體中斷訊號線)
 ```
-2. 硬體架構與 RTL 設計 (Hardware RTL Design)
+## 2. 硬體架構與 RTL 設計 (Hardware RTL Design)
 本 IP 採用 雙層階層化設計 (Hierarchical Design)：
 
 頂層模組 (myip_v1_0.v)：作為 IP 的外包裝門面，負責宣告與外部開關、LED 及 PS 端 IRQ 腳位的連線，並將 AXI 匯流排訊號直接透傳給底層。
