@@ -44,7 +44,7 @@
 |  sws_8bits[7:0]   |   0x04 (slv_reg1)  |        讀取 (R)      | 讀取 8 位元指撥開關/按鈕狀態。sws_8bits[7] 控制跑馬燈方向。  |
 |      slv_reg2     |         0x08       |        寫入 (W)      |   中斷清除暫存器：CPU 寫入 0x01 時，將 irq_out 強制降回 0。  |
 
-# 頂層模組程式碼 (myip_v1_0.v)
+### 頂層模組程式碼 (myip_v1_0.v)
 ```v
 `timescale 1 ns / 1 ps
 
@@ -118,7 +118,7 @@ module myip_v1_0 #
 
 endmodule
 ```
-# 內層邏輯模組程式碼 (myip_v1_0_S00_AXI.v)
+### 內層邏輯模組程式碼 (myip_v1_0_S00_AXI.v)
 ```v
 // =========================================================================
 // Add user logic here (跑馬燈正反向控制 + 中斷機制)
@@ -185,7 +185,7 @@ assign irq_out = irq_reg;
 
 // User logic ends
 ```
-## 實體腳位約束 (Pin Constraints - XDC)
+## 3. 實體腳位約束 (Pin Constraints - XDC)
 ```v
 # =====================================================================
 # 1. 8-bits LED 輸出腳位設定 (LVCMOS33 3.3V 電壓標準)
@@ -215,8 +215,8 @@ set_property PACKAGE_PIN H18 [get_ports {sws_8bits[5]}]
 set_property PACKAGE_PIN H17 [get_ports {sws_8bits[6]}]
 set_property PACKAGE_PIN M15 [get_ports {sws_8bits[7]}]
 ```
-## UG585 手冊對照與 GIC 中斷架構
- 對照 Xilinx UG585 (Zynq-7000 TRM) 手冊內容：
+## 4. UG585 手冊對照與 GIC 中斷架構
+對照 Xilinx UG585 (Zynq-7000 TRM) 手冊內容：
 ```text
 1.PL-to-PS 中斷 Port：IRQ_F2P[0:0]
 
@@ -226,8 +226,8 @@ set_property PACKAGE_PIN M15 [get_ports {sws_8bits[7]}]
        Distributor Base Address: 0xF8F0_1000
        CPU Interface Base Address: 0xF8F0_0100
 ```
-## 軟體驅動設計 (Vitis / SDK C Driver)
-# C 語言端捨棄官方 xgpio.h 庫，改採底層 xil_io.h 進行暫存器存取與手動中斷清除：
+## 5. 軟體驅動設計 (Vitis / SDK C Driver)
+### C 語言端捨棄官方 xgpio.h 庫，改採底層 xil_io.h 進行暫存器存取與手動中斷清除：
 ```c
 #include <stdio.h>
 #include "xparameters.h"
@@ -333,7 +333,7 @@ int main() {
 }
 ```
 
-## 實驗結果驗證
+## 6. 實驗結果驗證
 1. Vivado Block Design 畫面：myip_0 成功取代 GPIO IP，且 irq_out 連接至 Zynq PS 的 IRQ_F2P[0:0]。
 
 2.跑馬燈功能：
