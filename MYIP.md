@@ -342,4 +342,8 @@ int main() {
 
 當 SW7 = 1 時，8 顆 LED 即時切換為反向（向右）迴圈跑馬燈[cite: 2]。
 ```
-3.中斷功能：撥動任一指撥開關或按下按鈕時，Vitis Terminal 正確印出中斷訊息，證明硬體觸發與 slv_reg2 手動中斷清除邏輯運作正常[cite: 2]。
+3.中斷功能：撥動任一指撥開關或按下按鈕時，Vitis Terminal 正確印出中斷訊息，證明硬體觸發與 slv_reg2 手動中斷清除邏輯運作正常。
+
+# 實驗結果影片
+
+[Practical Video](https://www.youtube.com/watch?v=DFJ1LbRWHDc)
