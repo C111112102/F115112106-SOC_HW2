@@ -2,7 +2,7 @@
 
 ## 作業題目
 
-延續HW2第三題，將內建GPIO改成自訂IP，並由硬體部分控制，軟體部分僅提供中斷訊號
+延續HW2第三題，將內建GPIO改成自訂IP，並由硬體部分控制，軟體部分僅提供中斷訊號。自訂 AXI IP 跑馬燈與中斷控制設計
 
 # 題目三(自訂IP) ANS
 # Hardware Design
@@ -10,8 +10,6 @@
 ## Vivado Block Design
 
 ![Block](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/Block_MYIP.png)
-
-# 系統晶片設計實習：自訂 AXI4-Lite IP 跑馬燈與中斷控制設計報告
 
 ## 1. 系統整體架構 (System Architecture Overview)
 
