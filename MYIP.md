@@ -183,7 +183,7 @@ assign irq_out = irq_reg;
 
 // User logic ends
 ```
-## 3. 實體腳位約束 (Pin Constraints - XDC)
+## 3. Pin Constraints - XDC
 ```v
 # =====================================================================
 # 1. 8-bits LED 輸出腳位設定 (LVCMOS33 3.3V 電壓標準)
