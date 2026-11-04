@@ -13,7 +13,7 @@
 
 ## 1. 系統整體架構 (System Architecture Overview)
 
-本專案移除 Xilinx 官方的 AXI GPIO IP (`axi_gpio_0` 與 `axi_gpio_1`)，改採以 Verilog 完全自訂之 `myip_v1_0` Custom IP，並與 Zynq-7020 PS (Processing System) 進行 AXI4-Lite 匯流排連接與硬體中斷對接[cite: 1, 4, 5]。
+移除 Xilinx 官方的 AXI GPIO IP (`axi_gpio_0` 與 `axi_gpio_1`)，改採以 Verilog 完全自訂之 `myip_v1_0` Custom IP，並與 Zynq-7020 PS (Processing System) 進行 AXI4-Lite 匯流排連接與硬體中斷對接。
 
 ```text
 【Zynq-7020 PS 端 (ARM CPU)】
