@@ -253,7 +253,7 @@ IRQ_F2P[0]
 
 ## Vivado Block Design
 
-![Block](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/Block.png)
+![Block](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/Block_GPIO.png)
 
 本實驗架構：
 
