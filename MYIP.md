@@ -12,35 +12,36 @@
 
 ![Block](https://github.com/C111112102/F115112106-SOC_HW2/blob/main/Image/Block_MYIP.png)
 
+
 ## 1. 系統整體架構 (System Architecture Overview)
 
-移除 Xilinx 官方的 AXI GPIO IP (`axi_gpio_0` 與 `axi_gpio_1`)，改採以 Verilog 完全自訂之 `myip_v1_0` Custom IP，並與 Zynq-7020 PS (Processing System) 進行 AXI4-Lite 匯流排連接與硬體中斷對接。
+本專案移除 Xilinx 官方的 AXI GPIO IP (`axi_gpio_0` 與 `axi_gpio_1`)，改採以 Verilog 完全自訂之 `myip_v1_0` Custom IP，並與 Zynq-7020 PS (Processing System) 進行 AXI4-Lite 匯流排連接與硬體中斷對接。
+
+在本架構中，跑馬燈的燈號點亮與移位邏輯完全由 **C 語言（ARM CPU）中斷服務常式 (ISR)** 被動驅動與控制；Verilog RTL 負責 AXI 位址解碼、按鈕邊緣狀態偵測及 Handshake 中斷旗標手動清除機制。
 
 ```text
 【Zynq-7020 PS 端 (ARM CPU)】
        │
        ├── AXI4-Lite 匯流排 ───> 【myip_0 (Custom IP - PL 端)】
-       │                            ├── 時脈分頻器 (slow_clk) ──> 跑馬燈正反向控制邏輯
-       │                            ├── slv_reg0 (0x00) ───────> (保留供 CPU 控制)
-       │                            ├── leds_8bits[7:0] ───────> [XDC] ──> 實體 8 顆 LED
-       │                            ├── sws_8bits[7:0]  ───────> [XDC] ──> 實體 按鈕/開關
-       │                            │     └── sws_8bits[7] ────> 跑馬燈方向控制 (0:正向, 1:反向)
-       │                            └── slv_reg2 (0x08) ───────> 中斷手動清除邏輯
+       │                            ├── slv_reg0 (0x00) ───────> leds_8bits[7:0] ──> [XDC] ──> 實體 8 顆 LED
+       │                            ├── slv_reg1 (0x04) <─────── sws_8bits[7:0]  <── [XDC] ──> 實體 按鈕/開關
+       │                            └── slv_reg2 (0x08) ───────> 中斷手動清除邏輯 (Handshake Clear)
        └── IRQ_F2P[0:0] <────────── irq_out (硬體中斷訊號線)
 ```
+
 ## 2. 硬體架構與 RTL 設計 (Hardware RTL Design)
 本 IP 採用 雙層階層化設計 (Hierarchical Design)：
 
 頂層模組 (myip_v1_0.v)：作為 IP 的外包裝門面，負責宣告與外部開關、LED 及 PS 端 IRQ 腳位的連線，並將 AXI 匯流排訊號直接透傳給底層。
 
-內層邏輯模組 (myip_v1_0_S00_AXI.v)：包含 AXI4-Lite 暫存器讀寫對映、跑馬燈計數器與中斷手動觸發/清除邏輯。
+內層邏輯模組 (myip_v1_0_S00_AXI.v)：包含 AXI4-Lite 暫存器解碼、LED 輸出指派與中斷訊號生成/手動清除邏輯。
 
 ### RTL 暫存器與 I/O 位址規劃 (Register Map)
 
 |    暫存器 / 腳位   | 位址偏移量 (Offset) |       讀/寫權限      |                       功能與邏輯說明                       |
 | ----------------- | ------------------ | -------------------- | -------------------------------------------------------- |
-|  leds_8bits[7:0]  |          -         |        輸出 (O)      |        連接實體 LED，由內部跑馬燈邏輯與分頻時脈驅動。        |
-|  sws_8bits[7:0]   |   0x04 (slv_reg1)  |        讀取 (R)      | 讀取 8 位元指撥開關/按鈕狀態。sws_8bits[7] 控制跑馬燈方向。  |
+| slv_reg0[7:0] / leds_8bits[7:0]  |          -         |        輸出 (O)      |        連接實體 LED，由內部跑馬燈邏輯與分頻時脈驅動。        |
+|  slv_reg2 (中斷清除) / sws_8bits[7:0]   |   0x04 (slv_reg1)  |        讀取 (R)      | 讀取 8 位元指撥開關/按鈕狀態。sws_8bits[7] 控制跑馬燈方向。  |
 |      slv_reg2     |         0x08       |        寫入 (W)      |   中斷清除暫存器：CPU 寫入 0x01 時，將 irq_out 強制降回 0。  |
 
 ### 頂層模組程式碼 (myip_v1_0.v)
@@ -119,68 +120,114 @@ endmodule
 ```
 ### 內層邏輯模組程式碼 (myip_v1_0_S00_AXI.v)
 ```v
-// =========================================================================
-// Add user logic here (跑馬燈正反向控制 + 中斷機制)
-// =========================================================================
+// Add user logic here
 
-// 1. 時脈分頻器 (將 50MHz / 100MHz 降速，讓肉眼看得清跑馬燈)
-reg [25:0] clk_div;
-wire slow_clk;
+// ------------------------------------------------------------
+// 1. 輸出腳位綁定
+// ------------------------------------------------------------
+assign leds_8bits = slv_reg0[7:0];
+assign irq_out    = slv_reg3[0];
+
+// ------------------------------------------------------------
+// 2. LED 除頻計時器 (100 MHz -> 10 Hz)
+// ------------------------------------------------------------
+localparam integer LED_DIV_COUNT =
+    C_S_AXI_CLK_FREQ_HZ / LED_STEP_HZ;
+
+reg [31:0] led_div_count;
+
+wire led_tick = (led_div_count == LED_DIV_COUNT - 1);
 
 always @(posedge S_AXI_ACLK) begin
     if (!S_AXI_ARESETN)
-        clk_div <= 26'd0;
+        led_div_count <= 32'd0;
+    else if (led_tick)
+        led_div_count <= 32'd0;
     else
-        clk_div <= clk_div + 1'b1;
+        led_div_count <= led_div_count + 1'b1;
 end
 
-assign slow_clk = clk_div[23]; // 控制跑馬燈流動速度
-
-// 2. 跑馬燈正反向邏輯 (以開關 sws_8bits[7] 作為方向控制：0為正向，1為反向)
-reg [7:0] led_reg;
-
-always @(posedge slow_clk or negedge S_AXI_ARESETN) begin
-    if (!S_AXI_ARESETN) begin
-        led_reg <= 8'b0000_0001;
-    end else begin
-        if (sws_8bits[7] == 1'b0) begin
-            // 【正向跑馬燈】：向左迴圈移動 (Bit 0 -> 1 -> 2 ... -> 7 -> 0)
-            led_reg <= {led_reg[6:0], led_reg[7]};
-        end else begin
-            // 【反向跑馬燈】：向右迴圈移動 (Bit 7 -> 6 -> 5 ... -> 0 -> 7)
-            led_reg <= {led_reg[0], led_reg[7:1]};
-        end
-    end
-end
-
-assign leds_8bits = led_reg;
-
-// 3. 中斷觸發與清除邏輯
-reg irq_reg;
-reg [7:0] sws_d1;
-
-// 解碼 AXI 寫入位址：判斷 CPU 是否正在寫入 slv_reg2 (位址偏移量 0x08)
-wire slv_reg2_wren = slv_reg_wren && (axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] == 2'h2);
+// ------------------------------------------------------------
+// 3. 開關非同步訊號兩級同步器與邊緣暫存
+// ------------------------------------------------------------
+reg [7:0] sws_meta;
+reg [7:0] sws_sync;
+reg       sws7_d1;
 
 always @(posedge S_AXI_ACLK) begin
     if (!S_AXI_ARESETN) begin
-        sws_d1  <= 8'b0;
-        irq_reg <= 1'b0;
-    end else begin
-        sws_d1 <= sws_8bits;
-        
-        // 條件 A：當偵測到開關/按鈕狀態發生改變時，拉高中斷訊號
-        if (sws_8bits != sws_d1) begin
-            irq_reg <= 1'b1;
-        end 
-        // 條件 B：當 CPU 寫入 1 到 slv_reg2 (0x08) 時，手動清除中斷旗標
-        else if (slv_reg2_wren && S_AXI_WDATA[0] == 1'b1) begin
-            irq_reg <= 1'b0;
-        end
+        sws_meta <= 8'b0;
+        sws_sync <= 8'b0;
+        sws7_d1  <= 1'b0;
+    end
+    else begin
+        sws_meta <= sws_8bits;
+        sws_sync <= sws_meta;
+        sws7_d1  <= sws_sync[7];
     end
 end
 
-assign irq_out = irq_reg;
+// ------------------------------------------------------------
+// 4. slv_reg1: 更新同步後的開關狀態供 PS 讀取
+// ------------------------------------------------------------
+always @(posedge S_AXI_ACLK) begin
+    if (!S_AXI_ARESETN)
+        slv_reg1 <= 32'b0;
+    else
+        slv_reg1 <= {24'b0, sws_sync};
+end
+
+// ------------------------------------------------------------
+// 5. slv_reg0: 自動正反向跑馬燈邏輯 (Reset 後從 LED0 開始)
+// ------------------------------------------------------------
+always @(posedge S_AXI_ACLK) begin
+    if (!S_AXI_ARESETN) begin
+        slv_reg0 <= 32'h0000_0001;
+    end
+    else if (led_tick) begin
+        if (sws_sync[7] == 1'b0) begin
+            // Forward: LED0 -> LED1 -> ... -> LED7 -> LED0
+            slv_reg0[7:0] <= {
+                slv_reg0[6:0],
+                slv_reg0[7]
+            };
+        end
+        else begin
+            // Reverse: LED7 -> LED6 -> ... -> LED0 -> LED7
+            slv_reg0[7:0] <= {
+                slv_reg0[0],
+                slv_reg0[7:1]
+            };
+        end
+
+        slv_reg0[31:8] <= 24'b0;
+    end
+end
+
+// ------------------------------------------------------------
+// 6. slv_reg3 & irq_out: 中斷觸發與手動清除邏輯
+// ------------------------------------------------------------
+reg irq_reg;
+
+always @(posedge S_AXI_ACLK) begin
+    if (!S_AXI_ARESETN) begin
+        irq_reg  <= 1'b0;
+        slv_reg3 <= 32'b0;
+    end
+    else begin
+        if (sws_sync[7] != sws7_d1) begin
+            irq_reg  <= 1'b1;
+            slv_reg3 <= 32'h0000_0001;
+        end
+        else if (clear_irq_command) begin
+            irq_reg  <= 1'b0;
+            slv_reg3 <= 32'h0000_0000;
+        end
+        else begin
+            slv_reg3 <= {31'b0, irq_reg};
+        end
+    end
+end
 
 // User logic ends
 ```
@@ -233,103 +280,207 @@ set_property PACKAGE_PIN M15 [get_ports {sws_8bits[7]}]
 #include "xil_io.h"
 #include "xscugic.h"
 #include "xil_exception.h"
+#include "xil_types.h"
+#include "xstatus.h"
 
-// 1. 定義自訂 IP 暫存器基底位址與中斷 ID (請對照 xparameters.h)
+// ============================================================
+// 1. 自訂 IP 基底位址與中斷 ID
+// ============================================================
+
 #define MY_IP_BASEADDR          XPAR_MYIP_0_S00_AXI_BASEADDR
+
 #define INTC_DEVICE_ID          XPAR_SCUGIC_SINGLE_DEVICE_ID
 
-// 對應 UG585 手冊第 7-10 頁的 SPI Interrupt ID (PL[0] 對應 ID 61)
+// 若 PL IRQ 接到 IRQ_F2P[0]，Zynq-7000 通常對應 SPI ID 61
 #define INTC_CUSTOM_IP_IRPT_ID  61
 
-// 2. 暫存器偏移量 (Register Offsets) 定義
-#define REG_LED_OFFSET          0x00  // slv_reg0: 控制 8 顆 LED 亮滅
-#define REG_SW_OFFSET           0x04  // slv_reg1: 讀取 8-bit 指撥開關/按鈕狀態
-#define REG_CLR_INTR_OFFSET     0x08  // slv_reg2: 中斷清除暫存器 (寫入 1 手動清除)
+// ============================================================
+// 2. AXI4-Lite 暫存器位址
+// ============================================================
 
-// 全域變數
+#define REG_LED_OFFSET          0x00
+#define REG_SW_OFFSET           0x04
+#define REG_CLR_INTR_OFFSET     0x08
+#define REG_INTR_STATUS_OFFSET  0x0C
+
+// ============================================================
+// 3. 全域變數
+// ============================================================
+
 XScuGic IntcInstance;
-u32 led_data = 0x01;
 
-// =========================================================================
-// 核心：自訂的中斷服務常式 (ISR / Interrupt Service Routine)
-// 當按鈕/開關觸發 irq_out 拉高時，ARM CPU 會暫停背景程式，自動跳轉執行此函式
-// =========================================================================
-void Custom_IP_ISR(void *CallbackRef) {
-    // 1. 從 slv_reg1 (0x04) 讀取按鈕/開關目前狀態
-    u32 sw_status = Xil_In32(MY_IP_BASEADDR + REG_SW_OFFSET);
+// ============================================================
+// 4. 自訂 IP 中斷服務常式
+// ============================================================
 
-    // 2. 翻轉 LED 狀態並寫入 slv_reg0 (0x00) 點亮實體 LED
-    led_data = ~led_data;
-    Xil_Out32(MY_IP_BASEADDR + REG_LED_OFFSET, led_data);
+void Custom_IP_ISR(void *CallbackRef)
+{
+    u32 led_status;
+    u32 sw_status;
+    u32 intr_status;
 
-    printf("Custom IP Interrupt Triggered! SW Status: 0x%02X, LED: 0x%02X\r\n",
-           (unsigned int)sw_status, (unsigned int)(led_data & 0xFF));
+    // 讀取目前 LED 狀態
+    led_status = Xil_In32(
+        MY_IP_BASEADDR + REG_LED_OFFSET
+    );
 
-    // 3. 【最關鍵步驟】：寫入 1 到 slv_reg2 (0x08)
-    // 告知 Verilog 手動把 irq_out 降回 0 (清除硬體中斷)，否則 CPU 會卡死在中斷迴圈中！
-    Xil_Out32(MY_IP_BASEADDR + REG_CLR_INTR_OFFSET, 0x01);
+    // 讀取目前開關狀態
+    sw_status = Xil_In32(
+        MY_IP_BASEADDR + REG_SW_OFFSET
+    );
+
+    // 讀取中斷狀態
+    intr_status = Xil_In32(
+        MY_IP_BASEADDR + REG_INTR_STATUS_OFFSET
+    );
+
+    xil_printf("\r\n========== Interrupt ==========\r\n");
+
+    xil_printf("Switch Status : 0x%02X\r\n",
+               (unsigned int)(sw_status & 0xFF));
+
+    xil_printf("LED Status    : 0x%02X\r\n",
+               (unsigned int)(led_status & 0xFF));
+
+    xil_printf("Interrupt     : 0x%08X\r\n",
+               (unsigned int)intr_status);
+
+    // 判斷 SW7 狀態
+    if (sw_status & 0x80)
+    {
+        xil_printf("SW7 = HIGH : Reverse Direction\r\n");
+    }
+    else
+    {
+        xil_printf("SW7 = LOW  : Forward Direction\r\n");
+    }
+
+    // ========================================================
+    // 清除 PL 端中斷
+    // 寫入 slv_reg2 (0x08) = 1
+    // ========================================================
+
+    Xil_Out32(
+        MY_IP_BASEADDR + REG_CLR_INTR_OFFSET,
+        0x01
+    );
+
+    xil_printf("Interrupt Cleared!\r\n");
 }
 
-// =========================================================================
-// GIC (通用中斷控制器) 初始化與 ISR 向量表註冊
-// =========================================================================
-int IntcInitFunction(u16 DeviceId) {
+// ============================================================
+// 5. GIC 初始化與中斷註冊
+// ============================================================
+
+int IntcInitFunction(u16 DeviceId)
+{
     XScuGic_Config *IntcConfig;
     int status;
 
-    // 1. 查找 GIC 控制器配置 (Base Address: 0xF8F01000 / 0xF8F00100)
+    // 查找 GIC 設定
     IntcConfig = XScuGic_LookupConfig(DeviceId);
-    if (IntcConfig == NULL) return XST_FAILURE;
 
-    // 2. 初始化 GIC
-    status = XScuGic_CfgInitialize(&IntcInstance, IntcConfig, IntcConfig->CpuBaseAddress);
-    if (status != XST_SUCCESS) return XST_FAILURE;
+    if (IntcConfig == NULL)
+    {
+        return XST_FAILURE;
+    }
 
-    // 3. 建立並啟用 CPU 異常處理架構 (Exception Handling)
+    // 初始化 GIC
+    status = XScuGic_CfgInitialize(
+        &IntcInstance,
+        IntcConfig,
+        IntcConfig->CpuBaseAddress
+    );
+
+    if (status != XST_SUCCESS)
+    {
+        return XST_FAILURE;
+    }
+
+    // 初始化 CPU Exception
     Xil_ExceptionInit();
-    Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT,
-                                 (Xil_ExceptionHandler)XScuGic_InterruptHandler,
-                                 &IntcInstance);
+
+    // 註冊 GIC 中斷處理函式
+    Xil_ExceptionRegisterHandler(
+        XIL_EXCEPTION_ID_INT,
+        (Xil_ExceptionHandler)XScuGic_InterruptHandler,
+        &IntcInstance
+    );
+
+    // 設定 PL 中斷觸發方式
+    XScuGic_SetPriorityTriggerType(
+        &IntcInstance,
+        INTC_CUSTOM_IP_IRPT_ID,
+        0xA0,
+        0x01
+    );
+
+    // 將自訂 IP 中斷與 ISR 綁定
+    status = XScuGic_Connect(
+        &IntcInstance,
+        INTC_CUSTOM_IP_IRPT_ID,
+        (Xil_ExceptionHandler)Custom_IP_ISR,
+        NULL
+    );
+
+    if (status != XST_SUCCESS)
+    {
+        return XST_FAILURE;
+    }
+
+    // 啟用 GIC 中斷
+    XScuGic_Enable(
+        &IntcInstance,
+        INTC_CUSTOM_IP_IRPT_ID
+    );
+
+    // 啟用 CPU 中斷
     Xil_ExceptionEnable();
-
-    // 4. 將 Custom IP 的中斷 ID (SPI ID #61) 與自訂 ISR 函式進行註冊綁定
-    status = XScuGic_Connect(&IntcInstance, INTC_CUSTOM_IP_IRPT_ID,
-                             (Xil_ExceptionHandler)Custom_IP_ISR,
-                             NULL);
-    if (status != XST_SUCCESS) return XST_FAILURE;
-
-    // 5. 在 GIC 控制器中致能該筆中斷 ID
-    XScuGic_Enable(&IntcInstance, INTC_CUSTOM_IP_IRPT_ID);
 
     return XST_SUCCESS;
 }
 
-// =========================================================================
-// 主程式 (Main Routine)
-// =========================================================================
-int main() {
+// ============================================================
+// 6. Main
+// ============================================================
+
+int main(void)
+{
     int status;
 
-    printf("=== Zynq 7020 Custom IP Interrupt Test Start ===\r\n");
+    xil_printf("\r\n");
+    xil_printf("====================================\r\n");
+    xil_printf(" Zynq-7020 LED Running Light System\r\n");
+    xil_printf("====================================\r\n");
 
-    // 1. 寫入 slv_reg0 初始化 LED 狀態
-    Xil_Out32(MY_IP_BASEADDR + REG_LED_OFFSET, led_data);
-
-    // 2. 初始化 GIC 中斷系統並註冊 ISR
+    // 初始化 GIC
     status = IntcInitFunction(INTC_DEVICE_ID);
-    if (status != XST_SUCCESS) {
-        printf("GIC & Interrupt Setup Failed!\r\n");
+
+    if (status != XST_SUCCESS)
+    {
+        xil_printf("GIC Initialization Failed!\r\n");
         return XST_FAILURE;
     }
 
-    printf("Interrupt System Initialized Successfully. Waiting for SW trigger...\r\n");
+    xil_printf("Interrupt System Initialized!\r\n");
 
-    // 3. 背景無窮迴圈 (CPU 待命，硬體中斷觸發時自動跳轉至 Custom_IP_ISR)
-    while (1) {
+    xil_printf("LED Running Light Started!\r\n");
+
+    xil_printf("SW7 LOW  : Forward Direction\r\n");
+    xil_printf("SW7 HIGH : Reverse Direction\r\n");
+
+    xil_printf("Waiting for SW7 Interrupt...\r\n");
+
+    // 背景無窮迴圈
+    while (1)
+    {
+        // LED 跑馬燈由 PL 自動控制
+        // PS 等待 PL 發出中斷
     }
 
-    return 0;
+    return XST_SUCCESS;
 }
+
 ```
 
 ## 6. 實驗結果驗證
